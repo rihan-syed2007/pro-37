@@ -1,0 +1,117 @@
+//Create variables here
+var dog,dogImg;
+var happyDog,happyDogImg;
+var database;
+var foodS,foodStock;
+var feed,addfood;
+var lastFed,fedTime;
+var MilkImg;
+var changeState,readState;
+var bedRoomImg,gardenImg,washRoomImg;
+var gameState="hungry";
+
+function preload()
+{
+	//load images here
+  dogImg=loadImage("images/Dog.png");
+  happyDogImg=loadImage("images/happy dog.png");
+  bedRoomImg=loadImage("images/Bed Room.png");
+  gardenImg=loadImage("images/Garden.png");
+  washRoomImg=loadImage("images/Wash Room.png");
+
+}
+
+function setup() {
+  database = firebase.database();
+
+	createCanvas(650,650);
+  
+  foodObj=new Food();
+  
+  foodStock = database.ref('Food');
+  foodStock.on("value", readStock);
+
+  dog = createSprite(350,500,50,50);
+  dog.addImage(dogImg);
+  dog.scale=0.3;
+
+  feed = createButton("Feed The Dog");
+  feed.position(800,65);
+  feed.mousePressed(feedDog);
+  
+  addfood = createButton("Add Food");
+  addfood.position(700,65);
+  addfood.mousePressed(addFoods);
+  
+  readState=database.ref('gameState');
+  readState.on("value",function(data){
+    gameState=data.val();
+  })
+
+}
+
+
+function draw() {  
+ background(46,139,87);
+
+  foodObj.display();
+
+fedTime=database.ref('FeedTime');
+fedTime.on("value",function(data){
+ lastFed=data.val();
+})
+
+textSize(15);
+
+ fill("white");
+
+ if(lastFed>=12){
+ text("Last Feed: "+ lastFed%12 + "PM", 150,30);
+ }
+ else if(lastFed==0){
+   text("Last Feed: 12 AM",150,30);
+ }
+ else{
+  text("Last Feed: "+ lastFed + "AM", 150,30);
+ }
+
+
+ drawSprites();
+
+}
+
+function readStock(data){
+ foodS=data.val();
+ foodObj.updateFoodStock(foodS);
+}
+
+function writeStock(x){
+
+  if(x<=0){
+    x=0;
+  }
+ else {
+  x=x-1;
+  }
+ database.ref('/').update({
+    food:x
+  })
+}
+
+function feedDog(){
+  dog.addImage(happyDogImg);
+
+  foodObj.updateFoodStock(foodObj.getFoodStock()-1);
+  database.ref('/').update({
+    Food:foodObj.getFoodStock(),
+    FeedTime:hour()
+  })
+}
+
+function addFoods(){
+  foodS++;
+  database.ref('/').update({
+    Food:foodS
+  })
+  
+}
